@@ -431,6 +431,7 @@ class ShopRepository extends CoreRepository implements ShopRepoInterface
             $result[$shop->id]['translation']      = $shop->translation;
             $result[$shop->id]['open']             = $shop->open;
             $result[$shop->id]['products_count']   = 0;
+            $result[$shop->id]['delivery_time']   = Shop::query()->find($shop->id)->delivery_time;
 
             foreach ($shop->orders as $order) {
 
