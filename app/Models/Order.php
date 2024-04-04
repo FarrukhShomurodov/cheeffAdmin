@@ -469,7 +469,7 @@ class Order extends Model
 
     public function yaDelivery()
     {
-        return $this->hasOne(YandexDelivery::class)->first();
+        return $this->hasOne(YandexDelivery::class);
     }
 
 }

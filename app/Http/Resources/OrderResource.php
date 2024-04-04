@@ -105,7 +105,7 @@ class OrderResource extends JsonResource
             'my_address'                    => UserAddressResource::make($this->whenLoaded('myAddress')),
             'table'                         => TableResource::make($this->whenLoaded('table')),
             'payment_to_partner'			=> PaymentToPartnerResource::make($this->whenLoaded('paymentToPartner')),
-            'yandexDelivery'                => YandexDeliveryResource::make($this->yaDelivery())
+            'yandexDelivery'                => YandexDeliveryResource::make($this->yaDelivery()->first())
         ];
     }
 }

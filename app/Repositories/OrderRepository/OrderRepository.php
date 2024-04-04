@@ -499,7 +499,7 @@ class OrderRepository extends CoreRepository implements OrderRepoInterface
 	 */
 	public function reDataOrder(?Order $order): OrderResource|null
 	{
-		return !empty($order) ? OrderResource::make($order) : null;
+		return !empty($order) ? OrderResource::make($order->load('deliveryMan')) : null;
 	}
 
 	/**

@@ -30,6 +30,7 @@ use App\Repositories\Interfaces\OrderRepoInterface;
 use App\Repositories\OrderRepository\AdminOrderRepository;
 use App\Services\Interfaces\OrderServiceInterface;
 use App\Services\OrderService\OrderStatusUpdateService;
+use App\Services\YandexDeliveryService\YaDeliveryService;
 use App\Traits\Notification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -42,15 +43,17 @@ class OrderController extends AdminBaseController
 {
 	use Notification;
 
-	/**
-	 * @param OrderRepoInterface $orderRepository
-	 * @param AdminOrderRepository $adminRepository
-	 * @param OrderServiceInterface $orderService
-	 */
+    /**
+     * @param OrderRepoInterface $orderRepository
+     * @param AdminOrderRepository $adminRepository
+     * @param OrderServiceInterface $orderService
+     * @param YaDeliveryService $yaDeliveryService
+     */
 	public function __construct(
 		private OrderRepoInterface $orderRepository, // todo remove
 		private AdminOrderRepository $adminRepository,
-		private OrderServiceInterface $orderService
+		private OrderServiceInterface $orderService,
+        protected YaDeliveryService $yaDeliveryService
 	)
 	{
 		parent::__construct();
@@ -388,7 +391,7 @@ class OrderController extends AdminBaseController
 			]);
 		}
 
-		$result = (new OrderStatusUpdateService)->statusUpdate($order, $request->input('status'));
+		$result = (new OrderStatusUpdateService($this->yaDeliveryService))->statusUpdate($order, $request->input('status'));
 
 		if (!data_get($result, 'status')) {
 			return $this->onErrorResponse($result);

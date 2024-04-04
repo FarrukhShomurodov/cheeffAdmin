@@ -13,6 +13,7 @@ use App\Repositories\OrderRepository\DeliveryMan\OrderRepository;
 use App\Services\OrderService\OrderReviewService;
 use App\Services\OrderService\OrderService;
 use App\Services\OrderService\OrderStatusUpdateService;
+use App\Services\YandexDeliveryService\YaDeliveryService;
 use App\Traits\Notification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -24,13 +25,15 @@ class OrderController extends DeliverymanBaseController
 
     private OrderRepository $repository;
     private OrderService $service;
+    private YaDeliveryService $yaDeliveryService;
 
-    public function __construct(OrderRepository $repository, OrderService $service) {
+    public function __construct(OrderRepository $repository, OrderService $service, YaDeliveryService $yaDeliveryService) {
 
         parent::__construct();
 
         $this->repository = $repository;
         $this->service    = $service;
+        $this->yaDeliveryService = $yaDeliveryService;
     }
 
     /**
@@ -124,7 +127,7 @@ class OrderController extends DeliverymanBaseController
             ]);
         }
 
-        $result = (new OrderStatusUpdateService)->statusUpdate($order, $request->input('status'), true);
+        $result = (new OrderStatusUpdateService($this->yaDeliveryService))->statusUpdate($order, $request->input('status'), true);
 
         if (!data_get($result, 'status')) {
             return $this->onErrorResponse($result);

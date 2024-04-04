@@ -14,6 +14,8 @@ use App\Models\Order;
 use App\Models\Settings;
 use App\Models\Shop;
 use App\Models\User;
+use App\Models\Wallet;
+use App\Models\WalletHistory;
 use App\Services\CartService\CartService;
 use App\Services\CoreService;
 use App\Services\Interfaces\OrderServiceInterface;
@@ -167,6 +169,7 @@ class OrderService extends CoreService implements OrderServiceInterface
 
                     $order->delivery_fee = $deliveryFee;
 
+                    $this->setCurrent($order->id, 106);
                 } else {
                     $order->delivery_fee = 0;
                 }
@@ -180,6 +183,7 @@ class OrderService extends CoreService implements OrderServiceInterface
             if (!data_get($order, 'status')) {
                 return $order;
             }
+
 
             return [
                 'status' => true,

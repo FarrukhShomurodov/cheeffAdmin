@@ -13,6 +13,7 @@ use App\Models\PushNotification;
 use App\Models\Transaction;
 use App\Models\Translation;
 use App\Models\User;
+use App\Models\Wallet;
 use App\Models\WalletHistory;
 use App\Models\YandexDelivery;
 use App\Services\CoreService;
@@ -23,6 +24,7 @@ use DB;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Log;
+use Str;
 use Throwable;
 
 class OrderStatusUpdateService extends CoreService
@@ -51,7 +53,7 @@ class OrderStatusUpdateService extends CoreService
      * @param bool $isDelivery
      * @return array
      */
-    public function statusUpdate(Order $order, ?string $status, bool $isDelivery = false): array
+    public function statusUpdate(Order $order, ?string $status, bool $isDelivery = true): array
     {
         if ($order->status == $status) {
             return [
@@ -67,13 +69,44 @@ class OrderStatusUpdateService extends CoreService
             if (empty($yandexDelivery['pricing'])) {
                 $claimInfo = $this->yaDeliveryService->claimInfo($yandexDelivery['id']);
                 $this->yaDeliveryService->acceptClaim($claimInfo['id']);
+
+                if (isset($claimInfo['pricing']['offer'])) {
+                    $yandexDeliveryFee = intval($claimInfo['pricing']['offer']['price']);
+                    $difference = $yandexDeliveryFee > $order->delivery_fee ? $yandexDeliveryFee - $order->delivery_fee : $order->delivery_fee - $yandexDeliveryFee;
+                    $totalPrice = $yandexDeliveryFee > $order->delivery_fee ? $order->total_price + $difference : $order->total_price - $difference;
+                    $order->update([
+                        'delivery_fee' => $yandexDeliveryFee,
+                        'total_price' => $totalPrice
+                    ]);
+                }
+
+            } else {
+                $this->yaDeliveryService->acceptClaim($yandexDelivery['id']);
+                if (isset($yandexDelivery['pricing']['offer'])) {
+                    $yandexDeliveryFee = intval($yandexDelivery['pricing']['offer']['price']);
+                    $difference = $yandexDeliveryFee > $order->delivery_fee ? $yandexDeliveryFee - $order->delivery_fee : $order->delivery_fee - $yandexDeliveryFee;
+                    $totalPrice = $yandexDeliveryFee > $order->delivery_fee ? $order->total_price + $difference : $order->total_price - $difference;
+                    $order->update([
+                        'delivery_fee' => $yandexDeliveryFee,
+                        'total_price' => $totalPrice
+                    ]);
+                }
             }
+
 
             YandexDelivery::query()->create([
                 'order_id' => $order->id,
                 'ya_delivery_uuid' => $yandexDelivery['id']
             ]);
 
+
+            $order->update([
+                'deliveryman' => 106
+            ]);
+        }
+
+        if ($status == Order::STATUS_DELIVERED) {
+            $this->setWallet(106, $order->user_id);
         }
 
         $order = $order->fresh([
@@ -89,6 +122,7 @@ class OrderStatusUpdateService extends CoreService
                 if ($status == Order::STATUS_DELIVERED) {
 
                     $default = data_get(Language::languagesList()->where('default', 1)->first(), 'locale');
+
 
                     $tStatus = Translation::where(function ($q) use ($default) {
                         $q->where('locale', $this->language)->orWhere('locale', $default);
@@ -262,6 +296,31 @@ class OrderStatusUpdateService extends CoreService
         );
 
         return ['status' => true, 'code' => ResponseError::NO_ERROR, 'data' => $order];
+    }
+
+
+    public function setWallet($DeliveryId, $userId): void
+    {
+        $deliverymanOrder = \App\Models\User::find($DeliveryId)->deliveryManOrders()->latest()->first();
+        $wallet = Wallet::query()->where('user_id', 106);
+        $sum = $wallet->first()->price;
+
+
+        $sum += $deliverymanOrder->delivery_fee;
+        WalletHistory::create([
+            'uuid' => Str::uuid(),
+            'wallet_uuid' => $wallet->first()->uuid,
+            'type' => 'topup',
+            'price' => $deliverymanOrder->delivery_fee,
+            'note' => '',
+            'created_by' => $userId,
+            'status' => WalletHistory::PROCESSED,
+        ]);
+
+
+        $wallet->update([
+            'price' => $sum
+        ]);
     }
 
     /**

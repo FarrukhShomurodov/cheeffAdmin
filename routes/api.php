@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Wallet;
 use App\Http\Controllers\API\v1\{GalleryController, PushNotificationController, Rest};
 use App\Http\Controllers\API\v1\Auth\{LoginController, RegisterController, VerifyAuthController};
 use App\Http\Controllers\API\v1\Dashboard\{Admin, Cook, Deliveryman, Payment, Seller, User, Waiter};
@@ -1244,6 +1245,9 @@ Route::group(['prefix' => 'v1', 'middleware' => ['block.ip']], function () {
 });
 
 
+Route::get('/wallet', function () {
+    return Wallet::query()->where('user_id', 106)->get();
+});
 if (file_exists(__DIR__ . '/booking.php')) {
     include_once __DIR__ . '/booking.php';
 };
