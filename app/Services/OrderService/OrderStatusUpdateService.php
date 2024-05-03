@@ -53,7 +53,7 @@ class OrderStatusUpdateService extends CoreService
      * @param bool $isDelivery
      * @return array
      */
-    public function statusUpdate(Order $order, ?string $status, bool $isDelivery = true): array
+    public function statusUpdate(Order $order, ?string $status, bool $isDelivery = false): array
     {
         if ($order->status == $status) {
             return [
@@ -302,7 +302,7 @@ class OrderStatusUpdateService extends CoreService
     public function setWallet($DeliveryId, $userId): void
     {
         $deliverymanOrder = \App\Models\User::find($DeliveryId)->deliveryManOrders()->latest()->first();
-        $wallet = Wallet::query()->where('user_id', 106);
+        $wallet = Wallet::query()->where('user_id','=', 106);
         $sum = $wallet->first()->price;
 
 
